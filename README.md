@@ -1,6 +1,3 @@
-
-
-
 # task-manager-fullstack
 
 <p align="center">
@@ -129,4 +126,4 @@ For bugs or feature requests, open an issue.
 
 ## License
 
-MIT License. See [LICENSE](LICENSE).
+MIT License. See [LICENSE](./task-manager-fullstack/LICENSE).
