@@ -100,7 +100,7 @@ task-manager-fullstack is a full-stack web application to manage daily tasks wit
 
 ## Documentation & Wiki
 
-Full documentation, diagrams, API details, and guides are available in [WIKI.md](./task-manager-fullstack/WIKI.md) and the project wiki section.
+Full documentation, diagrams, API details, and guides are available in the [project wiki](https://github.com/TomasPosada0626/task-manager-fullstack/wiki).
 
 ---
 
