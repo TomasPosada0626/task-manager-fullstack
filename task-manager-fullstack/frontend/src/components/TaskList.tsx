@@ -1,6 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { getToken } from '../utils/token';
-import { fetchTasks, createTask, updateTask, deleteTask, Task, PaginatedTasks } from '../services/taskService';
+
+import { useEffect, useState, useCallback } from 'react';
+import {
+  Paper, Box, Typography, Grid, TextField, MenuItem, Button, Chip, List, IconButton, Alert, CircularProgress, Tooltip, Accordion, AccordionSummary, AccordionDetails
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddTaskIcon from '@mui/icons-material/AddTask';
+import CancelIcon from '@mui/icons-material/Cancel';
+import {
+  fetchTasks, createTask, updateTask, deleteTask, Task
+} from '../services/taskService';
 import { useNotification } from '../hooks/useNotification';
 
 const initialForm: Partial<Task> = {
@@ -11,72 +21,86 @@ const initialForm: Partial<Task> = {
   dueDate: '',
 };
 
-const statusColors: Record<string, string> = {
-  pending: '#fbbf24',
-  'in-progress': '#3b82f6',
-  completed: '#22c55e',
+const statusColors: Record<string, 'warning' | 'primary' | 'success'> = {
+  pending: 'warning',
+  'in-progress': 'primary',
+  completed: 'success',
+};
+const priorityColors: Record<string, 'success' | 'warning' | 'error'> = {
+  low: 'success',
+  medium: 'warning',
+  high: 'error',
 };
 
-const priorityColors: Record<string, string> = {
-  low: '#a3e635',
-  medium: '#facc15',
-  high: '#ef4444',
-};
-
-const TaskList: React.FC = () => {
-  // Removed token check for access control
+const TaskList = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState('');
-  const [priority, setPriority] = useState('');
   const [form, setForm] = useState<Partial<Task>>(initialForm);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const { show } = useNotification();
+  const [statusFilter, setStatusFilter] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
 
-  const loadTasks = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data: PaginatedTasks = await fetchTasks(status, priority, page, 10);
-      setTasks(data.tasks);
-      setTotalPages(data.totalPages);
-    } catch (err: unknown) {
-      if (err && typeof err === 'object' && 'message' in err) {
-        setError((err as { message?: string }).message || 'Error loading tasks');
-      } else {
-        setError('Error loading tasks');
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const { show } = useNotification();
+  const [expanded, setExpanded] = useState<string | false>(false);
+
+  // Cerrar el accordion al hacer click fuera
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      // Si el click no es dentro de un accordion summary, cerrar
+      if (!(e.target instanceof Element)) return;
+      if (!e.target.closest('.task-accordion-summary')) {
+        setExpanded(false);
       }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const loadTasks = useCallback(async (pageNum = 1) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchTasks(statusFilter, priorityFilter, pageNum, 5);
+      setTasks(data.tasks);
+      setPage(data.page);
+      setTotalPages(data.totalPages);
+    } catch (err) {
+      setError('Failed to load tasks');
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, priorityFilter]);
 
   useEffect(() => {
-    loadTasks();
-    // eslint-disable-next-line
-  }, [status, priority, page]);
+    loadTasks(1);
+  }, [loadTasks]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError(null);
-    setSuccessMsg(null);
-    if (!form.title || form.title.length < 3) {
-      setFormError('Title is required and must be at least 3 characters.');
-      show('Title is required and must be at least 3 characters.', 'error');
+    if (!form.title || !form.description) {
+      setError('Title and description are required');
       return;
     }
     try {
+      const updatedForm = { ...form };
+      // Si se está editando y cambia a 'in-progress', setear startDate
+      if (editingId && form.status === 'in-progress' && !form.startDate) {
+        updatedForm.startDate = new Date().toISOString();
+      }
+      // Si se está editando y cambia a 'completed', setear finishedAt
+      if (editingId && form.status === 'completed' && !form.finishedAt) {
+        updatedForm.finishedAt = new Date().toISOString();
+      }
       if (editingId) {
-        await updateTask(editingId, form);
+        await updateTask(editingId, updatedForm);
         setSuccessMsg('Task updated successfully!');
         show('Task updated successfully!', 'success');
       } else {
@@ -86,129 +110,291 @@ const TaskList: React.FC = () => {
       }
       setForm(initialForm);
       setEditingId(null);
-      loadTasks();
-    } catch (err: unknown) {
-      const msg = (err && typeof err === 'object' && 'message' in err)
-        ? (err as { message?: string }).message || 'Error saving task'
-        : 'Error saving task';
-      setFormError(msg);
-      show(msg, 'error');
+      loadTasks(page);
+    } catch {
+      setError('Error saving task');
     }
   };
 
   const handleEdit = (task: Task) => {
     setForm({
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      priority: task.priority,
-      dueDate: task.dueDate ? task.dueDate.slice(0, 10) : '',
+      ...task,
+      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : '',
     });
     setEditingId(task._id);
-    setFormError(null);
-    setSuccessMsg(null);
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Delete this task?')) return;
     try {
       await deleteTask(id);
       setSuccessMsg('Task deleted successfully!');
       show('Task deleted successfully!', 'success');
-      loadTasks();
-    } catch (err: unknown) {
-      const msg = (err && typeof err === 'object' && 'message' in err)
-        ? (err as { message?: string }).message || 'Error deleting task'
-        : 'Error deleting task';
-      setError(msg);
-      show(msg, 'error');
+      loadTasks(page);
+    } catch {
+      setError('Error deleting task');
     }
   };
 
+  const handleFilter = () => {
+    loadTasks(1);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    loadTasks(newPage);
+  };
+
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto', padding: 24, background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: 24 }}>My Tasks</h2>
-      <div style={{ display: 'flex', gap: 16, marginBottom: 16, justifyContent: 'center' }}>
-        <label>
-          Status:
-          <select value={status} onChange={e => setStatus(e.target.value)}>
-            <option value="">All</option>
-            <option value="pending">Pending</option>
-            <option value="in-progress">In Progress</option>
-            <option value="completed">Completed</option>
-          </select>
-        </label>
-        <label>
-          Priority:
-          <select value={priority} onChange={e => setPriority(e.target.value)}>
-            <option value="">All</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
-        </label>
-      </div>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24, alignItems: 'center', justifyContent: 'center' }}>
-        <input
-          name="title"
-          placeholder="Title"
-          value={form.title || ''}
-          onChange={handleChange}
-          required
-          style={{ flex: 2, minWidth: 120 }}
-        />
-        <input
-          name="description"
-          placeholder="Description"
-          value={form.description || ''}
-          onChange={handleChange}
-          style={{ flex: 3, minWidth: 120 }}
-        />
-        <select name="status" value={form.status || 'pending'} onChange={handleChange} style={{ flex: 1 }}>
-          <option value="pending">Pending</option>
-          <option value="in-progress">In Progress</option>
-          <option value="completed">Completed</option>
-        </select>
-        <select name="priority" value={form.priority || 'medium'} onChange={handleChange} style={{ flex: 1 }}>
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-        </select>
-        <input
-          name="dueDate"
-          type="date"
-          value={form.dueDate || ''}
-          onChange={handleChange}
-          style={{ flex: 1 }}
-        />
-        <button type="submit" style={{ flex: 1, minWidth: 80 }}>{editingId ? 'Update' : 'Add'} Task</button>
-        {editingId && <button type="button" onClick={() => { setForm(initialForm); setEditingId(null); }} style={{ flex: 1, minWidth: 80 }}>Cancel</button>}
-        {formError && <span style={{ color: 'red', marginLeft: 8 }}>{formError}</span>}
-        {successMsg && <span style={{ color: 'green', marginLeft: 8 }}>{successMsg}</span>}
-      </form>
-      {loading && <div>Loading...</div>}
-      {error && <div style={{ color: 'red' }}>{error}</div>}
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {tasks.map(task => (
-          <li key={task._id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, padding: 12, borderRadius: 6, background: '#f3f4f6', boxShadow: '0 1px 3px #0001' }}>
-            <span style={{ fontWeight: 600 }}>{task.title}</span>
-            <span style={{ color: '#6b7280' }}>{task.description}</span>
-            <span style={{ background: statusColors[task.status], color: '#fff', borderRadius: 4, padding: '2px 8px', fontSize: 12 }}>{task.status}</span>
-            <span style={{ background: priorityColors[task.priority], color: '#fff', borderRadius: 4, padding: '2px 8px', fontSize: 12 }}>{task.priority}</span>
-            {task.dueDate && <span style={{ color: '#6366f1', fontSize: 12 }}>Due: {new Date(task.dueDate).toLocaleDateString()}</span>}
-            <button onClick={() => handleEdit(task)} style={{ marginLeft: 'auto' }}>Edit</button>
-            <button onClick={() => handleDelete(task._id)} style={{ color: '#ef4444' }}>Delete</button>
-          </li>
-        ))}
-      </ul>
-      {(!loading && tasks.length === 0) && <div style={{ textAlign: 'center', color: '#6b7280' }}>No tasks found.</div>}
-      {/* Pagination controls */}
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 16 }}>
-        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</button>
-        <span>Page {page} of {totalPages}</span>
-        <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next</button>
-      </div>
-    </div>
+    <Paper sx={{ maxWidth: 900, mx: 'auto', mt: 5, p: 4, borderRadius: 4 }}>
+      <Typography variant="h3" mb={3} align="center" fontWeight={700}>
+        My Tasks
+      </Typography>
+
+      {/* Formulario de tarea */}
+      <Box component="form" onSubmit={handleSubmit} mb={3}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={3}>
+            <TextField
+              name="title"
+              label="Title * *"
+              value={form.title || ''}
+              onChange={handleChange}
+              fullWidth
+              required
+              size="small"
+              disabled={!!editingId}
+            />
+          </Grid>
+          <Grid item xs={12} sm={3}>
+            <TextField
+              name="description"
+              label="Description * *"
+              value={form.description || ''}
+              onChange={handleChange}
+              fullWidth
+              required
+              size="small"
+              disabled={!!editingId}
+            />
+          </Grid>
+          <Grid item xs={12} sm={2}>
+            <TextField
+              select
+              name="priority"
+              label="Priority * *"
+              value={form.priority || 'medium'}
+              onChange={handleChange}
+              fullWidth
+              size="small"
+              disabled={!!editingId}
+            >
+              <MenuItem value="low">Low</MenuItem>
+              <MenuItem value="medium">Medium</MenuItem>
+              <MenuItem value="high">High</MenuItem>
+            </TextField>
+          </Grid>
+          <Grid item xs={12} sm={2}>
+            <TextField
+              name="dueDate"
+              label="Due Date"
+              type="date"
+              value={form.dueDate || ''}
+              onChange={handleChange}
+              fullWidth
+              size="small"
+              InputLabelProps={{ shrink: true }}
+              disabled={false}
+            />
+          </Grid>
+          <Grid item xs={12} sm={2}>
+            <TextField
+              select
+              name="status"
+              label="Status * *"
+              value={form.status || 'pending'}
+              onChange={handleChange}
+              fullWidth
+              size="small"
+              disabled={false}
+            >
+              <MenuItem value="pending">Pending</MenuItem>
+              <MenuItem value="in-progress">In Progress</MenuItem>
+              <MenuItem value="completed">Completed</MenuItem>
+            </TextField>
+          </Grid>
+          <Grid item xs={12} sm={2}>
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              startIcon={<AddTaskIcon />}
+              sx={{ height: '100%' }}
+            >
+              {editingId ? 'Update' : 'ADD'}
+            </Button>
+          </Grid>
+          {editingId && (
+            <Grid item xs={12}>
+              <Button
+                variant="outlined"
+                startIcon={<CancelIcon />}
+                onClick={() => {
+                  setForm(initialForm);
+                  setEditingId(null);
+                }}
+                color="secondary"
+                sx={{ mt: 1 }}
+              >
+                Cancel Edit
+              </Button>
+            </Grid>
+          )}
+        </Grid>
+      </Box>
+
+      {/* Alertas */}
+      {successMsg && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg(null)}>
+          {successMsg}
+        </Alert>
+      )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Filtros mejorados */}
+      <Box display="flex" gap={2} mb={2} alignItems="center">
+        <TextField
+          select
+          label="Status"
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          size="small"
+          sx={{ minWidth: 160, background: '#fff' }}
+        >
+          <MenuItem value="">Status</MenuItem>
+          <MenuItem value="pending">Pending</MenuItem>
+          <MenuItem value="in-progress">In Progress</MenuItem>
+          <MenuItem value="completed">Completed</MenuItem>
+        </TextField>
+        <TextField
+          select
+          label="Priority"
+          value={priorityFilter}
+          onChange={e => setPriorityFilter(e.target.value)}
+          size="small"
+          sx={{ minWidth: 160, background: '#fff' }}
+        >
+          <MenuItem value="">Priority</MenuItem>
+          <MenuItem value="low">Low</MenuItem>
+          <MenuItem value="medium">Medium</MenuItem>
+          <MenuItem value="high">High</MenuItem>
+        </TextField>
+        <Button
+          variant="contained"
+          onClick={handleFilter}
+          sx={{ fontWeight: 700, minWidth: 160, height: 40, boxShadow: 1, background: '#2563eb' }}
+        >
+          APLICAR FILTROS
+        </Button>
+      </Box>
+
+      {/* Lista de tareas con Accordions retráctiles */}
+      {loading ? (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight={120}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <List>
+          {tasks.length === 0 ? (
+            <Typography align="center" color="text.secondary" sx={{ mt: 3 }}>
+              No tasks found.
+            </Typography>
+          ) : (
+            tasks.map(task => (
+              <Accordion
+                key={task._id}
+                expanded={expanded === task._id}
+                onChange={(_, isExpanded) => setExpanded(isExpanded ? task._id : false)}
+                sx={{ mb: 2, borderRadius: 3, boxShadow: 1, background: '#f9fafb' }}
+              >
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                  className="task-accordion-summary"
+                  sx={{ cursor: 'pointer', borderRadius: 3 }}
+                >
+                  <Typography variant="h6" fontWeight={700} flex={1}>{task.title}</Typography>
+                  <Chip label={task.status} color={statusColors[task.status]} size="small" sx={{ fontWeight: 600, mx: 0.5 }} />
+                  <Chip label={task.priority} color={priorityColors[task.priority]} size="small" sx={{ fontWeight: 600, mx: 0.5 }} />
+                  {task.dueDate && (
+                    <Chip label={`Due: ${new Date(task.dueDate).toLocaleDateString()}`} color="info" size="small" sx={{ mx: 0.5 }} />
+                  )}
+                  <Tooltip title="Edit">
+                    <IconButton onClick={e => { e.stopPropagation(); handleEdit(task); }} size="small">
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete">
+                    <IconButton color="error" onClick={e => { e.stopPropagation(); handleDelete(task._id); }} size="small">
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Box ml={1} mb={1}>
+                    <Typography variant="body2" color="text.secondary" mb={0.5}><b>Description:</b> {task.description}</Typography>
+                    <Typography variant="body2" color="text.secondary"><b>Created:</b> {task.createdAt ? new Date(task.createdAt).toLocaleString() : '-'}</Typography>
+                    <Typography variant="body2" color="text.secondary" display="flex" alignItems="center">
+                      <b>Due:</b> {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '-'}
+                      {Array.isArray(task.dueDateHistory) && task.dueDateHistory.length > 0 && (
+                        <Tooltip title={`Previous: ${new Date(task.dueDateHistory[task.dueDateHistory.length-1]).toLocaleDateString()}`} arrow>
+                          <Chip label="Modified" color="warning" size="small" sx={{ ml: 1, fontWeight: 600 }} />
+                        </Tooltip>
+                      )}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary"><b>Status:</b> {task.status}</Typography>
+                    <Typography variant="body2" color="text.secondary"><b>Priority:</b> {task.priority}</Typography>
+                    <Typography variant="body2" color="text.secondary"><b>Tags:</b> {Array.isArray(task.tags) ? (task.tags.length > 0 ? task.tags.join(', ') : '-') : (task.tags || '-')}</Typography>
+                    {task.startDate && (
+                      <Typography variant="body2" color="text.secondary">
+                        <b>Start:</b> {new Date(task.startDate).toLocaleDateString()} {task.status === 'in-progress' && <Chip label="in-progress" color="primary" size="small" sx={{ ml: 1 }} />}
+                      </Typography>
+                    )}
+                    {task.finishedAt && (
+                      <Typography variant="body2" color="text.secondary">
+                        <b>Finished:</b> {new Date(task.finishedAt).toLocaleDateString()} {task.status === 'completed' && <Chip label="completed" color="success" size="small" sx={{ ml: 1 }} />}
+                      </Typography>
+                    )}
+                  </Box>
+                </AccordionDetails>
+              </Accordion>
+            ))
+          )}
+        </List>
+      )}
+
+      {/* Paginación */}
+      <Box display="flex" justifyContent="center" alignItems="center" gap={2} mt={2}>
+        <Button
+          variant="outlined"
+          disabled={page <= 1}
+          onClick={() => handlePageChange(page - 1)}
+        >
+          PREVIOUS
+        </Button>
+        <Typography fontWeight={600}>
+          Page {page} of {totalPages}
+        </Typography>
+        <Button
+          variant="outlined"
+          disabled={page >= totalPages}
+          onClick={() => handlePageChange(page + 1)}
+        >
+          NEXT
+        </Button>
+      </Box>
+    </Paper>
   );
 };
 

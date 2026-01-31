@@ -30,11 +30,10 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f3f4f6' }}>
-      <div style={{ background: '#fff', padding: 32, borderRadius: 12, boxShadow: '0 2px 16px #0002', minWidth: 340 }}>
-        <h2 style={{ textAlign: 'center', marginBottom: 24 }}>🔒 Login</h2>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6' }}>
+      <div>
         <LoginForm onSubmit={handleLogin} loading={loading} error={error} />
-        <div style={{ textAlign: 'center', marginTop: 16 }}>
+        <div style={{ textAlign: 'center', marginTop: 24 }}>
           <span>Don&apos;t have an account? </span>
           <Link to="/register">Register</Link>
         </div>

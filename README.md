@@ -1,111 +1,132 @@
+
+
+
 # task-manager-fullstack
-A full-stack task management application with authentication, task prioritization, and status tracking, designed following clean architecture and agile practices.
+
+<p align="center">
+  <b>Professional, secure, and modern fullstack task manager app</b><br>
+  <i>Node.js, Express, MongoDB, React, TypeScript, JWT, and best security practices</i>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-18.x-green" />
+  <img src="https://img.shields.io/badge/React-18.x-blue" />
+  <img src="https://img.shields.io/badge/MongoDB-ODM-brightgreen" />
+  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" />
+</p>
+
+---
+
+## Table of Contents
+- [Short Description](#short-description)
+- [Project Overview](#project-overview)
+- [Main Features](#main-features)
+- [System Design (High Level)](#system-design-high-level)
+- [Tech Stack](#tech-stack)
+- [Installation & Setup](#installation--setup)
+- [Project Status & Roadmap](#project-status--roadmap)
+- [Documentation & Wiki](#documentation--wiki)
+- [Contribution Guidelines](#contribution-guidelines)
+- [Author](#author)
+- [License](#license)
+
+---
+
+---
+
+## Short Description
+
+Efficient, secure, and modern fullstack app for personal and team task management. Built for productivity and professional use.
+
+---
 
 ## Project Overview
-task-manager-fullstack is a professional full-stack web application designed to help users manage their daily tasks efficiently. The platform enables secure user registration, authentication, and personal task management, supporting prioritization and status tracking. Built with clean architecture and agile development practices, it is suitable for both individual users and teams.
+
+task-manager-fullstack is a full-stack web application to manage daily tasks with secure authentication, prioritization, and a clean UI. Designed with modular architecture and agile practices.
+
+---
 
 ## Main Features
-- User authentication (registration, login, JWT-based sessions)
-- Password encryption with bcrypt
-- Role-based access control (user/admin)
+
+- User authentication (JWT-based)
 - Task CRUD (create, read, update, delete)
-- Task attributes: title, description, status, priority, due date, timestamps
-- Filtering tasks by status and priority
-- Protected routes (backend and frontend)
-- Data validation and centralized error handling
-- Responsive and clean user interface
+- Role-based access (user/admin)
+- Filtering, status, and priority for tasks
+- Responsive UI
+
+---
+
+## System Design (High Level)
+
+- **Frontend:** React app for user interaction and task management
+- **Backend:** Node.js/Express REST API for authentication, business logic, and data management
+- **Database:** MongoDB for storing users and tasks
+- **Authentication:** JWT for secure sessions
+- **Architecture:** Separation of concerns (controllers, services, models, routes)
+
+---
 
 ## Tech Stack
+
 - **Backend:** Node.js, Express.js
-- **Frontend:** React (functional components, hooks)
-- **Database:** MongoDB (Mongoose ODM)
-- **Authentication:** JWT (JSON Web Tokens)
-- **Development Environment:** Visual Studio Code
+- **Frontend:** React, TypeScript
+- **Database:** MongoDB (Mongoose)
+- **Authentication:** JWT
 
-## System Architecture
-The application is divided into two main modules: backend and frontend. The backend exposes a RESTful API, handling authentication, authorization, and all business logic related to users and tasks. The frontend consumes this API, providing a user-friendly interface for task management. The database stores user and task data, ensuring each task is associated with its creator. The architecture follows separation of concerns, with clear distinctions between controllers, services, models, and routes.
+---
 
-## Project Structure
-```
-task-manager-fullstack/
-│
-├── backend/
-│   ├── src/
-│   │   ├── config/
-│   │   ├── controllers/
-│   │   ├── middlewares/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── services/
-│   │   └── utils/
-│   └── README.md
-│
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── hooks/
-│   │   └── utils/
-│   └── README.md
-│
-└── README.md
-```
-
-## Installation and Setup Instructions
+## Installation & Setup
 
 ### Backend
-1. Navigate to the backend directory:
-   ```
-   cd backend
-   ```
-2. Install dependencies:
-   ```
-   npm install
-   ```
-3. Create a `.env` file with your environment variables (e.g., MongoDB URI, JWT secret).
-4. Start the backend server:
-   ```
-   npm run dev
-   ```
+1. `cd backend`
+2. `npm install`
+3. Copy `.env.example` to `.env` and set your variables
+4. `npm run dev`
 
 ### Frontend
-1. Navigate to the frontend directory:
-   ```
-   cd frontend
-   ```
-2. Install dependencies:
-   ```
-   npm install
-   ```
-3. Start the frontend development server:
-   ```
-   npm start
-   ```
+1. `cd frontend`
+2. `npm install`
+3. `npm start`
 
-## API Endpoints Overview
+---
 
-| Method | Endpoint           | Description                    | Protected |
-|--------|--------------------|-------------------------------|-----------|
-| POST   | /api/auth/register | Register new user             | No        |
-| POST   | /api/auth/login    | User login                    | No        |
-| GET    | /api/tasks         | Get all tasks (user)          | Yes       |
-| POST   | /api/tasks         | Create new task               | Yes       |
-| PUT    | /api/tasks/:id     | Update task                   | Yes       |
-| DELETE | /api/tasks/:id     | Delete task                   | Yes       |
-| GET    | /api/users/me      | Get current user profile      | Yes       |
+## Project Status & Roadmap
 
-## Agile Methodology
-This project follows agile principles, with a backlog of user stories and technical tasks managed for iterative development. User stories focus on delivering value to end users, while technical tasks ensure code quality and maintainability.
+- **Status:** MVP complete and production-ready
+- **Next steps:**
+  - Add advanced task filtering and analytics
+  - Improve mobile experience
+  - Integrate notifications
+  - Expand documentation and wiki
 
-## Future Improvements
-- Task pagination and search
-- Password recovery functionality
-- Notification system for deadlines
-- Enhanced admin features
-- Improved UI/UX and accessibility
+---
+
+## Documentation & Wiki
+
+Full documentation, diagrams, API details, and guides are available in [WIKI.md](./task-manager-fullstack/WIKI.md) and the project wiki section.
+
+---
+
+## Contribution Guidelines
+
+1. Fork this repository
+2. Create a new branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -am 'Add new feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a Pull Request
+
+For bugs or feature requests, open an issue.
+
+---
 
 ## Author
-**Name:** Tomas  
-**Role:** Systems Engineering Student
+
+**Tomás Posada**  
+[LinkedIn](https://www.linkedin.com/in/tomasposada)  
+[Email](mailto:tomasposada67@gmail.com)
+
+---
+
+## License
+
+MIT License. See [LICENSE](LICENSE).

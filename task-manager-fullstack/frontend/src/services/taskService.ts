@@ -7,9 +7,14 @@ export interface Task {
   description?: string;
   status: 'pending' | 'in-progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
+  startDate?: string;
   dueDate?: string;
   createdAt: string;
   updatedAt: string;
+  tags?: string | string[];
+  assignedTo?: string;
+  finishedAt?: string;
+  dueDateHistory?: string[];
 }
 
 export interface PaginatedTasks {

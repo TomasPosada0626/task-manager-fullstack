@@ -3,6 +3,8 @@ import TaskList from '../components/TaskList';
 import TaskForm from '../components/TaskForm';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { Box, Button } from '@mui/material';
 
 const TasksPage: React.FC = () => {
   const { logout } = useAuth();
@@ -14,15 +16,23 @@ const TasksPage: React.FC = () => {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <button onClick={handleLogout} style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 4, padding: '8px 16px', cursor: 'pointer' }}>
-          Cerrar sesión
-        </button>
-      </div>
-      <TaskForm />
-      <TaskList />
-    </div>
+    <Box sx={{ minHeight: '100vh', background: '#f8fafc' }}>
+      <Box sx={{ position: 'fixed', top: 24, right: 32, zIndex: 100 }}>
+        <Button
+          onClick={handleLogout}
+          variant="contained"
+          color="error"
+          startIcon={<LogoutIcon />}
+          sx={{ fontWeight: 700, borderRadius: 3, boxShadow: 2, px: 3, py: 1 }}
+        >
+          Logout
+        </Button>
+      </Box>
+      <Box sx={{ pt: 6 }}>
+        <TaskForm />
+        <TaskList />
+      </Box>
+    </Box>
   );
 };
 
